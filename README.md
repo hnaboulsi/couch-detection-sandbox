@@ -2,7 +2,29 @@
 
 One editable MuJoCo experiment: a couch on a plain floor, or the same view with the couch absent. The program renders an RGB image and segmentation mask, asks Grounding DINO Tiny for `couch`, and records detections plus IoU-based TP/FP/FN counts. It does not model a house or the physical Go2 camera.
 
-The path is `scene.py → render.py → detector.py → evaluate.py → run.py`. `scene.py` is the only file you need to edit to change the experiment.
+Edit `SCENE` in `scene.py` for the existing couch, camera, and lighting settings. Adding a different mesh or scene geometry requires the small source changes described in [the scene guide](docs/SCENES.md).
+
+## Architecture
+
+This diagram is Mermaid source rendered by GitHub, not a generated image:
+
+```mermaid
+flowchart LR
+    A["scene.py: SCENE settings"] --> B["scene.py: MuJoCo XML"]
+    B --> C["render.py: RGB and object segmentation"]
+    C --> D["RGB image"]
+    C --> E["Target mask and visible box, or null"]
+    D --> F["detector.py: detect(image, prompts)"]
+    F --> G["Detection records"]
+    E --> H["evaluate.py: IoU and TP/FP/FN"]
+    G --> H
+    D --> I["run.py: save images and JSON"]
+    E --> I
+    G --> I
+    H --> I
+```
+
+`run.py` calls the renderer, detector, and evaluator in that order. The detector sees only RGB pixels and prompts; it does not receive MuJoCo's segmentation or ground-truth box. Read [the scene and 3D model guide](docs/SCENES.md) for changing geometry and environments, and [the detector adapter guide](docs/DETECTORS.md) for DINO's implementation and another model's interface.
 
 ## Linux setup and one run
 
@@ -46,6 +68,6 @@ The program intentionally has no batch runner or aggregate report. Two output di
 
 ## Add another detector later
 
-`detector.py` defines the shared `Detection(label, score, bbox, model_name)` record and `Detector` protocol. Another adapter should implement `detect(image, prompts)` and `metadata()`, return pixel-space xyxy boxes, and keep scores between zero and one. Change the detector construction in `run.py:main` to select it; the renderer, evaluator, and saved result format do not need to change. Grounding DINO is the only implemented adapter here.
+`detector.py` defines the shared `Detection(label, score, bbox, model_name)` record and `Detector` protocol. Another adapter should implement `detect(image, prompts)` and `metadata()`, return pixel-space xyxy boxes, and keep scores between zero and one. Change the detector construction in `run.py:main` to select it; the renderer, evaluator, and saved result format do not need to change. [The adapter guide](docs/DETECTORS.md) walks through DINO's implementation and a second adapter step by step. Grounding DINO is the only implemented adapter here.
 
 The couch mesh comes from Quaternius's Ultimate House Interior Pack under CC0; see `assets/CC0-LICENSE.txt`.
