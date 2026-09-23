@@ -6,7 +6,7 @@ Edit `SCENE` in `scene.py` for the existing couch, camera, and lighting settings
 
 ## Architecture
 
-This diagram is Mermaid source rendered by GitHub, not a generated image:
+The diagram shows how one scene becomes a saved evaluation:
 
 ```mermaid
 flowchart LR
@@ -62,7 +62,7 @@ Keep the `couch` prompt fixed while comparing present and absent images. Change 
 
 Each run writes `rgb.png`, `target_mask.png`, `annotated.png`, and `result.json`. The mask is white on visible couch pixels and black elsewhere; it is entirely black when the couch is absent. The annotated image shows the visible ground-truth box in cyan and qualifying predictions in green.
 
-`result.json` records every scene field, the text prompt, ground truth (`present`, visible-pixel `bbox`, and `visible_pixels`), each prediction (`label`, `score`, pixel-space `bbox`, and `model_name`), model revision and thresholds, and the evaluation decision. A detection needs score at least 0.35 and IoU at least 0.50 with the visible couch box to count as a true positive. A missed couch is a false negative. Extra or misplaced qualifying boxes are false positives. When the couch is absent, `bbox` is `null` and every qualifying prediction is a false positive.
+`result.json` records every scene field, the text prompt, ground truth (`present`, visible-pixel `bbox`, and `visible_pixels`), each prediction (`label`, `score`, pixel-space `bbox`, and `model_name`), model revision and thresholds, and the evaluation decision. DINO saves candidates from score 0.10 upward. A detection needs score at least 0.35 and IoU at least 0.50 with the visible couch box to count as a true positive. A missed couch is a false negative. Extra or misplaced qualifying boxes are false positives. When the couch is absent, `bbox` is `null` and every qualifying prediction is a false positive.
 
 The program intentionally has no batch runner or aggregate report. Two output directories are enough to compare a small experiment; this single scene is not a detector performance estimate.
 

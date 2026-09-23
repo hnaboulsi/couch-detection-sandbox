@@ -22,6 +22,7 @@ class Scene:
     camera_look_at: Vector3
     couch_position: Vector3
     couch_yaw_deg: float
+    target_label: str
     prompt: str
     lighting: str
 
@@ -41,6 +42,7 @@ SCENE = Scene(
     camera_look_at=(0.0, 0.0, 0.6),
     couch_position=(0.0, 0.0, 0.0),
     couch_yaw_deg=-90.0,
+    target_label="couch",
     prompt="couch",
     lighting="normal",
 )

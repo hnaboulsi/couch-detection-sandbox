@@ -51,7 +51,7 @@ def evaluate(
     ]
     saved.sort(key=lambda item: item[1].score, reverse=True)
     matched_index = None
-    matched_iou = 0.0
+    matched_iou = None
     for index, detection in saved:
         if not present or detection.label.lower() != target_label:
             continue

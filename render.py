@@ -28,19 +28,21 @@ def render_scene(scene: Scene) -> RenderedScene:
             "Install MuJoCo with `pip install -r requirements.txt`"
         ) from error
 
-    assets = {
-        COUCH_OBJ.name: COUCH_OBJ.read_bytes(),
-        COUCH_MTL.name: COUCH_MTL.read_bytes(),
-    }
+    assets = (
+        {COUCH_OBJ.name: COUCH_OBJ.read_bytes(), COUCH_MTL.name: COUCH_MTL.read_bytes()}
+        if scene.target_present
+        else {}
+    )
     model = mujoco.MjModel.from_xml_string(build_xml(scene), assets=assets)
     data = mujoco.MjData(model)
     mujoco.mj_forward(model, data)
     with mujoco.Renderer(model, height=scene.height, width=scene.width) as renderer:
         renderer.update_scene(data, camera="evaluation_camera")
         rgb = renderer.render().copy()
-        renderer.enable_segmentation_rendering()
-        renderer.update_scene(data, camera="evaluation_camera")
-        segmentation = renderer.render().copy()
+        if scene.target_present:
+            renderer.enable_segmentation_rendering()
+            renderer.update_scene(data, camera="evaluation_camera")
+            segmentation = renderer.render().copy()
 
     target_mask = np.zeros((scene.height, scene.width), dtype=bool)
     if scene.target_present:
@@ -68,7 +70,7 @@ def render_scene(scene: Scene) -> RenderedScene:
         rgb=rgb,
         target_mask=(target_mask.astype(np.uint8) * 255),
         ground_truth={
-            "label": scene.prompt,
+            "label": scene.target_label,
             "present": scene.target_present,
             "bbox": bbox,
             "visible_pixels": int(target_mask.sum()),

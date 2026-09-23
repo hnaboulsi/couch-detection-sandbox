@@ -26,7 +26,9 @@ def test_present_match_and_duplicate() -> None:
 
 
 def test_present_miss_and_localization_failure() -> None:
-    assert evaluate([], PRESENT)["false_negatives"] == 1
+    empty_result = evaluate([], PRESENT)
+    assert empty_result["false_negatives"] == 1
+    assert empty_result["matched_iou"] is None
     result = evaluate([detection(0.9, (60, 60, 90, 90))], PRESENT)
     assert (
         result["true_positives"],
@@ -54,6 +56,7 @@ def test_absent_scene_counts_every_qualifying_box_as_false_positive() -> None:
         0,
     )
     assert evaluate([], ABSENT)["false_positives"] == 0
+    assert result["matched_iou"] is None
 
 
 def test_below_threshold_box_is_not_counted() -> None:

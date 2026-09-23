@@ -27,7 +27,12 @@ class GroundingDINO:
     model_name = "IDEA-Research/grounding-dino-tiny"
     revision = "a2bb814dd30d776dcf7e30523b00659f4f141c71"
 
-    def __init__(self, device: str = "cpu") -> None:
+    def __init__(
+        self,
+        device: str = "cpu",
+        box_threshold: float = 0.10,
+        text_threshold: float = 0.10,
+    ) -> None:
         try:
             import torch
             from transformers import AutoModelForZeroShotObjectDetection, AutoProcessor
@@ -39,8 +44,12 @@ class GroundingDINO:
             raise ValueError("device must be 'cpu' or 'cuda'")
         if device == "cuda" and not torch.cuda.is_available():
             raise RuntimeError("CUDA was requested but is not available")
+        if not (0 <= box_threshold <= 1 and 0 <= text_threshold <= 1):
+            raise ValueError("Inference thresholds must be between zero and one")
         self._torch = torch
         self.device = device
+        self.box_threshold = box_threshold
+        self.text_threshold = text_threshold
         self.processor = AutoProcessor.from_pretrained(
             self.model_name, revision=self.revision
         )
@@ -67,8 +76,8 @@ class GroundingDINO:
         result = self.processor.post_process_grounded_object_detection(
             outputs,
             inputs.input_ids,
-            threshold=0.35,
-            text_threshold=0.35,
+            threshold=self.box_threshold,
+            text_threshold=self.text_threshold,
             target_sizes=[image.shape[:2]],
             text_labels=[prompt_list],
         )[0]
@@ -89,6 +98,6 @@ class GroundingDINO:
             "model_name": self.model_name,
             "revision": self.revision,
             "device": self.device,
-            "box_threshold": 0.35,
-            "text_threshold": 0.35,
+            "box_threshold": self.box_threshold,
+            "text_threshold": self.text_threshold,
         }

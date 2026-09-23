@@ -14,6 +14,7 @@ class Detection:
     bbox: tuple[float, float, float, float]
     model_name: str
 
+
 class Detector(Protocol):
     def detect(self, image: np.ndarray, prompts: Sequence[str]) -> list[Detection]: ...
     def metadata(self) -> dict[str, Any]: ...
@@ -27,9 +28,9 @@ The protocol is structural: a class with those two methods can be passed to `run
 
 `GroundingDINO.__init__` pins `IDEA-Research/grounding-dino-tiny` to revision `a2bb814dd30d776dcf7e30523b00659f4f141c71`. It loads Hugging Face's `AutoProcessor` and `AutoModelForZeroShotObjectDetection`, moves the model to CPU or CUDA, and puts it in evaluation mode. The model is downloaded on first use and reused from the Hugging Face cache later. `metadata()` records the model name, revision, device, and the two inference thresholds.
 
-`detect` validates that the image is RGB `uint8`, strips and lowercases the prompts, then asks the processor to encode the image and text as one batch. It runs the model under PyTorch `inference_mode()`, so gradients are not recorded. Finally it calls `post_process_grounded_object_detection` with `threshold=0.35`, `text_threshold=0.35`, `target_sizes=[image.shape[:2]]`, and `text_labels=[prompt_list]`. `target_sizes` supplies `(height, width)` so the returned boxes are scaled to the original image's pixel coordinates. The adapter converts each returned box, score, and text label into `Detection`, adding its model name. It does not use MuJoCo ground truth or apply a separate non-maximum suppression step.
+`detect` validates that the image is RGB `uint8`, strips and lowercases the prompts, then asks the processor to encode the image and text as one batch. It runs the model under PyTorch `inference_mode()`, so gradients are not recorded. Finally it calls `post_process_grounded_object_detection` with `threshold=0.10`, `text_threshold=0.10`, `target_sizes=[image.shape[:2]]`, and `text_labels=[prompt_list]`. `target_sizes` supplies `(height, width)` so the returned boxes are scaled to the original image's pixel coordinates. The adapter converts each returned box, score, and text label into `Detection`, adding its model name. It does not use MuJoCo ground truth or apply a separate non-maximum suppression step.
 
-There are two different decisions at the same current score value. DINO's box threshold controls **which candidates are returned and saved**. `evaluate.py`'s confidence threshold controls **which saved candidates are counted**. Both are 0.35 today; therefore a box below 0.35 is unavailable in `result.json`. To study lower-confidence proposals, lower the adapter's inference threshold and rerun into a new output directory. Merely lowering the evaluator threshold cannot recover boxes that were never saved.
+There are two score decisions. DINO's box threshold controls **which candidates are returned and saved**. `evaluate.py`'s confidence threshold controls **which saved candidates are counted**. DINO saves candidates at score 0.10 or above, while evaluation counts boxes at score 0.35 or above. A box below 0.10 is unavailable in `result.json`; a saved box between 0.10 and 0.35 is inspectable but does not affect TP/FP/FN. To study lower-confidence proposals, lower the adapter's inference threshold and rerun into a new output directory. Merely lowering the evaluator threshold cannot recover boxes that were never saved.
 
 ## How inference becomes a result
 
